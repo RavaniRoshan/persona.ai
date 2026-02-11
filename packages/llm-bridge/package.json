@@ -1,0 +1,24 @@
+{
+  "name": "@personamirror/llm-bridge",
+  "version": "1.0.0",
+  "description": "LLM abstraction layer with multi-provider support and observability",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@personamirror/persona-schema": "workspace:*",
+    "@personamirror/shared-utils": "workspace:*",
+    "openai": "^4.20.0",
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "typescript": "^5.2.2"
+  }
+}

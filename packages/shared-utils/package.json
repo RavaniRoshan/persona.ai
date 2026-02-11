@@ -1,0 +1,29 @@
+{
+  "name": "@personamirror/shared-utils",
+  "version": "1.0.0",
+  "description": "Shared utilities for validation, sanitization, and logging",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "winston": "^3.11.0",
+    "winston-daily-rotate-file": "^4.7.1",
+    "joi": "^17.11.0",
+    "xss": "^1.0.14",
+    "validator": "^13.11.0",
+    "crypto": "^1.0.1"
+  },
+  "devDependencies": {
+    "@types/joi": "^17.2.3",
+    "@types/node": "^20.8.0",
+    "@types/validator": "^13.11.0",
+    "typescript": "^5.2.2"
+  }
+}
