@@ -1,44 +1,44 @@
 @import "tailwindcss";
 
-/* ===== Custom Theme (Light Mode SaaS) ===== */
+/* ===== Custom Theme (Dark Mode AI SaaS) ===== */
 @theme {
   /* Fonts */
   --font-sans: "Inter", sans-serif;
   --font-heading: "Outfit", sans-serif;
 
-  /* Colors - Light Mode Default */
-  --color-background: hsl(0 0% 100%);
-  /* White */
-  --color-foreground: hsl(222 47% 11%);
+  /* Colors - Dark Mode Default */
+  --color-background: hsl(222 47% 11%);
   /* Slate 900 */
-
-  --color-card: hsl(0 0% 100%);
-  --color-card-foreground: hsl(222 47% 11%);
-
-  --color-primary: hsl(221 83% 53%);
-  /* Bright Blue #2563eb */
-  --color-primary-foreground: hsl(210 40% 98%);
-
-  --color-secondary: hsl(45 93% 47%);
-  /* Amber/Yellow #f59e0b */
-  --color-secondary-foreground: hsl(0 0% 100%);
-
-  --color-muted: hsl(210 40% 96.1%);
+  --color-foreground: hsl(210 40% 98%);
   /* Slate 50 */
-  --color-muted-foreground: hsl(215.4 16.3% 46.9%);
-  /* Slate 500 */
 
-  --color-accent: hsl(210 40% 96.1%);
-  /* Slate 50 */
-  --color-accent-foreground: hsl(222 47% 11%);
+  --color-card: hsl(222 47% 11%);
+  /* Slate 900 with opacity handled in util */
+  --color-card-foreground: hsl(210 40% 98%);
 
-  --color-destructive: hsl(0 84.2% 60.2%);
-  --color-destructive-foreground: hsl(210 40% 98%);
+  --color-primary: hsl(252 100% 67%);
+  /* Vivid Violet */
+  --color-primary-foreground: hsl(0 0% 100%);
 
-  --color-border: hsl(214.3 31.8% 91.4%);
-  /* Slate 200 */
-  --color-input: hsl(214.3 31.8% 91.4%);
-  --color-ring: hsl(221 83% 53%);
+  --color-secondary: hsl(190 100% 50%);
+  /* Cyan/Electric Blue */
+  --color-secondary-foreground: hsl(222 47% 11%);
+
+  --color-muted: hsl(217 33% 17%);
+  /* Slate 800 */
+  --color-muted-foreground: hsl(215 20% 65%);
+  /* Slate 400 */
+
+  --color-accent: hsl(252 100% 67%);
+  --color-accent-foreground: hsl(0 0% 100%);
+
+  --color-destructive: hsl(0 62.8% 30.6%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+
+  --color-border: hsl(217 33% 17%);
+  /* Slate 800 */
+  --color-input: hsl(217 33% 17%);
+  --color-ring: hsl(252 100% 67%);
 
   /* Animation Overrides */
   --animate-float: float 6s ease-in-out infinite;
@@ -65,7 +65,12 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    @apply antialiased;
+    @apply antialiased selection:bg-purple-500/30 selection:text-purple-200;
+    /* Add a subtle background gradient mesh */
+    background-image:
+      radial-gradient(circle at 15% 50%, rgba(124, 58, 237, 0.08), transparent 25%),
+      radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.08), transparent 25%);
+    background-attachment: fixed;
   }
 
   h1,
@@ -75,28 +80,106 @@
   h5,
   h6 {
     font-family: var(--font-heading);
-    letter-spacing: -0.025em;
-    @apply text-slate-900;
+    letter-spacing: -0.02em;
+    @apply text-white;
   }
 }
 
 /* ===== Utility classes ===== */
+
+/* Text Gradients */
 .text-gradient {
-  background-clip: text;
+  background: linear-gradient(135deg, #c084fc 0%, #6366f1 50%, #38bdf8 100%);
   -webkit-background-clip: text;
-  color: transparent;
-  background-image: linear-gradient(to right, var(--color-primary), #3b82f6, #60a5fa);
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-/* App Window Mockup Utility */
-.app-window {
-  @apply bg-white rounded-xl border border-slate-200 shadow-2xl overflow-hidden;
+.text-gradient-gold {
+  background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.app-header {
-  @apply bg-slate-50 border-b border-slate-200 px-4 py-2 flex items-center gap-2;
+/* Glass Panels */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-.window-control {
-  @apply w-3 h-3 rounded-full;
+.glass-panel:hover {
+  background: rgba(15, 23, 42, 0.7);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Premium Glow Effects */
+.glow-primary {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+}
+
+.glow-hover {
+  transition: box-shadow 0.3s ease;
+}
+
+.glow-hover:hover {
+  box-shadow: 0 0 25px rgba(139, 92, 246, 0.25);
+}
+
+/* Animated Backgrounds */
+.bg-grid-pattern {
+  background-size: 40px 40px;
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  mask-image: radial-gradient(ellipse at center, black 40%, transparent 75%);
+}
+
+/* Button Styles */
+.btn-primary {
+  @apply relative overflow-hidden bg-white text-slate-900 font-semibold transition-all hover:bg-slate-100;
+}
+
+.btn-primary-glow {
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(45deg, #c084fc, #6366f1, #38bdf8);
+  filter: blur(10px);
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.btn-primary:hover .btn-primary-glow {
+  opacity: 0.8;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}
+
+/* Utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
 }
