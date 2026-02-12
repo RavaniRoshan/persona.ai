@@ -1,63 +1,102 @@
-:global(*) {
-	margin: 0;
-	padding: 0;
-	box-sizing: border-box;
+@import "tailwindcss";
+
+/* ===== Custom Theme (Light Mode SaaS) ===== */
+@theme {
+  /* Fonts */
+  --font-sans: "Inter", sans-serif;
+  --font-heading: "Outfit", sans-serif;
+
+  /* Colors - Light Mode Default */
+  --color-background: hsl(0 0% 100%);
+  /* White */
+  --color-foreground: hsl(222 47% 11%);
+  /* Slate 900 */
+
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(222 47% 11%);
+
+  --color-primary: hsl(221 83% 53%);
+  /* Bright Blue #2563eb */
+  --color-primary-foreground: hsl(210 40% 98%);
+
+  --color-secondary: hsl(45 93% 47%);
+  /* Amber/Yellow #f59e0b */
+  --color-secondary-foreground: hsl(0 0% 100%);
+
+  --color-muted: hsl(210 40% 96.1%);
+  /* Slate 50 */
+  --color-muted-foreground: hsl(215.4 16.3% 46.9%);
+  /* Slate 500 */
+
+  --color-accent: hsl(210 40% 96.1%);
+  /* Slate 50 */
+  --color-accent-foreground: hsl(222 47% 11%);
+
+  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-destructive-foreground: hsl(210 40% 98%);
+
+  --color-border: hsl(214.3 31.8% 91.4%);
+  /* Slate 200 */
+  --color-input: hsl(214.3 31.8% 91.4%);
+  --color-ring: hsl(221 83% 53%);
+
+  /* Animation Overrides */
+  --animate-float: float 6s ease-in-out infinite;
+
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
+  }
 }
 
-:global(body) {
-	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-	background: #0a0a0f;
-	color: #ffffff;
-	line-height: 1.6;
-	overflow-x: hidden;
+/* ===== Base layer ===== */
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    @apply antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.025em;
+    @apply text-slate-900;
+  }
 }
 
-:global(html) {
-	scroll-behavior: smooth;
+/* ===== Utility classes ===== */
+.text-gradient {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  background-image: linear-gradient(to right, var(--color-primary), #3b82f6, #60a5fa);
 }
 
-.gradient-text {
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
-	background-clip: text;
+/* App Window Mockup Utility */
+.app-window {
+  @apply bg-white rounded-xl border border-slate-200 shadow-2xl overflow-hidden;
 }
 
-.glow-button {
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-	border: none;
-	padding: 16px 32px;
-	border-radius: 50px;
-	color: white;
-	font-weight: 600;
-	cursor: pointer;
-	transition: all 0.3s ease;
-	box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+.app-header {
+  @apply bg-slate-50 border-b border-slate-200 px-4 py-2 flex items-center gap-2;
 }
 
-.glow-button:hover {
-	transform: translateY(-2px);
-	box-shadow: 0 8px 30px rgba(102, 126, 234, 0.6);
-}
-
-.section-padding {
-	padding: 100px 20px;
-}
-
-.container {
-	max-width: 1200px;
-	margin: 0 auto;
-}
-
-.card {
-	background: rgba(255, 255, 255, 0.03);
-	border: 1px solid rgba(255, 255, 255, 0.1);
-	border-radius: 16px;
-	padding: 24px;
-	transition: all 0.3s ease;
-}
-
-.card:hover {
-	background: rgba(255, 255, 255, 0.05);
-	transform: translateY(-4px);
+.window-control {
+  @apply w-3 h-3 rounded-full;
 }
