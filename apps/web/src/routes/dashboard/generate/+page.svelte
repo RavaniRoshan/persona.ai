@@ -132,8 +132,6 @@
     }
   }
 </script>
-  
-</script>
 
 <div class="generate-page">
   <header class="page-header">
