@@ -1,11 +1,11 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { supabase, logger } from '../index';
 import { z } from 'zod';
 
-const router = Router();
+const router: Router = Router();
 
 // GET /api/queue - List content queue
-router.get('/', async (req, res) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
     const { status, limit = '50', offset = '0' } = req.query;
     
@@ -37,7 +37,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/queue/:id - Get specific queue item
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: Request, res: Response) => {
   try {
     const { data: item, error } = await supabase
       .from('content_queue')
@@ -60,7 +60,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // PUT /api/queue/:id - Update queue item
-router.put('/:id', async (req, res) => {
+router.put('/:id', async (req: Request, res: Response) => {
   try {
     const updateSchema = z.object({
       draft: z.string().optional(),
@@ -106,7 +106,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/queue/:id - Delete queue item
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const { error } = await supabase
       .from('content_queue')
@@ -125,7 +125,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // POST /api/queue/:id/approve - Approve content for posting
-router.post('/:id/approve', async (req, res) => {
+router.post('/:id/approve', async (req: Request, res: Response) => {
   try {
     const { data: item, error } = await supabase
       .from('content_queue')
@@ -158,7 +158,7 @@ router.post('/:id/approve', async (req, res) => {
 });
 
 // GET /api/queue/stats - Get queue statistics
-router.get('/stats/overview', async (req, res) => {
+router.get('/stats/overview', async (req: Request, res: Response) => {
   try {
     const { data: stats, error } = await supabase
       .rpc('get_queue_stats', { p_user_id: req.user.id });

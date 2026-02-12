@@ -1,10 +1,10 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { redis, supabase, logger } from '../index';
 
-const router = Router();
+const router: Router = Router();
 
 // Health check endpoint
-router.get('/', async (req, res) => {
+router.get('/', async (req: Request, res: Response) => {
   const checks = {
     timestamp: new Date().toISOString(),
     status: 'healthy',
@@ -58,7 +58,7 @@ router.get('/', async (req, res) => {
 });
 
 // Detailed health check (for internal monitoring)
-router.get('/detailed', async (req, res) => {
+router.get('/detailed', async (req: Request, res: Response) => {
   const detailed = {
     timestamp: new Date().toISOString(),
     status: 'healthy',
@@ -94,12 +94,12 @@ router.get('/detailed', async (req, res) => {
 });
 
 // Liveness probe (for Kubernetes)
-router.get('/live', (req, res) => {
+router.get('/live', (req: Request, res: Response) => {
   res.status(200).json({ status: 'alive' });
 });
 
 // Readiness probe (for Kubernetes)
-router.get('/ready', async (req, res) => {
+router.get('/ready', async (req: Request, res: Response) => {
   try {
     // Check critical dependencies
     await redis.ping();

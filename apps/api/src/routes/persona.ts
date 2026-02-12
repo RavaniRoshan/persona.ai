@@ -1,9 +1,9 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { supabase, logger } from '../index';
 import { LLMBridge } from '@personamirror/llm-bridge';
 import { z } from 'zod';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schema
 const extractPersonaSchema = z.object({
@@ -16,7 +16,7 @@ const extractPersonaSchema = z.object({
 });
 
 // POST /api/personas/extract - Extract persona from posts
-router.post('/extract', async (req, res) => {
+router.post('/extract', async (req: Request, res: Response) => {
   try {
     const validation = extractPersonaSchema.safeParse(req.body);
     if (!validation.success) {
@@ -111,7 +111,7 @@ router.post('/extract', async (req, res) => {
 });
 
 // GET /api/personas - List user's personas
-router.get('/', async (req, res) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
     const { data: personas, error } = await supabase
       .from('personas')
@@ -134,7 +134,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/personas/:id - Get specific persona
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: Request, res: Response) => {
   try {
     const { data: persona, error } = await supabase
       .from('personas')
@@ -154,7 +154,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // DELETE /api/personas/:id - Archive persona
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const { error } = await supabase
       .rpc('archive_persona', {

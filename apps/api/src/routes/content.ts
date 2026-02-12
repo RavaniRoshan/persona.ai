@@ -1,9 +1,9 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { supabase, logger } from '../index';
 import { LLMBridge } from '@personamirror/llm-bridge';
 import { z } from 'zod';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schema
 const generateContentSchema = z.object({
@@ -21,7 +21,7 @@ const generateContentSchema = z.object({
 });
 
 // POST /api/content/generate - Generate content
-router.post('/generate', async (req, res) => {
+router.post('/generate', async (req: Request, res: Response) => {
   try {
     const validation = generateContentSchema.safeParse(req.body);
     if (!validation.success) {
@@ -136,7 +136,7 @@ router.post('/generate', async (req, res) => {
 });
 
 // POST /api/content/validate - Validate content for platform
-router.post('/validate', async (req, res) => {
+router.post('/validate', async (req: Request, res: Response) => {
   try {
     const { content, platform } = req.body;
     

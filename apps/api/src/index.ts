@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction, Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -16,7 +16,7 @@ import { authMiddleware } from './middleware/auth';
 import { errorHandler } from './middleware/error';
 import { requestLogger } from './middleware/logging';
 
-const app = express();
+const app: Express = express();
 const logger = new Logger({ serviceName: 'personamirror-api' });
 
 // Redis client for rate limiting
