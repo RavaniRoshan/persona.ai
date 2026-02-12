@@ -7,5 +7,5 @@
       "runtime": "nodejs20.x"
     }
   },
-  "installCommand": "pnpm install"
+  "installCommand": "corepack enable && pnpm install"
 }
