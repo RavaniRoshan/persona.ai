@@ -1,5 +1,9 @@
 <!-- Content Generation Page -->
 <script>
+  import { onMount } from 'svelte';
+  import { personaApi, contentApi, userApi, ApiError } from '$lib/services/api.js';
+  import { goto } from '$app/navigation';
+  
   let selectedPersona = '';
   let topic = '';
   let platforms = [];
@@ -7,12 +11,10 @@
   let length = 'medium';
   let isGenerating = false;
   let generatedContent = null;
-  
-  const personas = [
-    { id: '1', name: 'Tech Thought Leader' },
-    { id: '2', name: 'Professional Consultant' },
-    { id: '3', name: 'Casual Creator' }
-  ];
+  let personas = [];
+  let isLoadingPersonas = true;
+  let error = null;
+  let llmConfig = null;
   
   const platformOptions = [
     { id: 'linkedin', name: 'LinkedIn', icon: '💼' },
@@ -33,40 +35,93 @@
     { value: 'long', label: 'Long (Multiple paragraphs)' }
   ];
   
+  onMount(async () => {
+    try {
+      // Load personas from API
+      const result = await personaApi.list();
+      personas = result.personas || [];
+      
+      // Load user's LLM configuration
+      const settings = await userApi.getSettings();
+      if (settings?.defaultLlmProvider) {
+        llmConfig = {
+          provider: settings.defaultLlmProvider,
+          apiKey: settings.apiKeys?.[settings.defaultLlmProvider] || '',
+          model: settings.defaultModel || 'gpt-4'
+        };
+      }
+    } catch (err) {
+      error = 'Failed to load personas. Please try again.';
+      console.error('Error loading data:', err);
+    } finally {
+      isLoadingPersonas = false;
+    }
+  });
+  
   async function generateContent() {
     if (!selectedPersona || !topic || platforms.length === 0) {
-      alert('Please fill in all fields');
+      error = 'Please fill in all required fields';
+      return;
+    }
+    
+    if (!llmConfig?.apiKey) {
+      error = 'Please configure your LLM API key in Settings first';
       return;
     }
     
     isGenerating = true;
+    error = null;
     
-    // Simulate API call
-    setTimeout(() => {
-      generatedContent = {
-        variants: platforms.map(platform => ({
-          platform,
-          content: generateMockContent(platform, topic, tone, length)
-        })),
-        confidence: 85,
-        estimatedEngagement: 'High'
-      };
+    try {
+      const result = await contentApi.generate({
+        topic,
+        personaId: parseInt(selectedPersona),
+        platforms,
+        tone,
+        length,
+        llmConfig
+      });
+      
+      if (result.success) {
+        generatedContent = {
+          variants: result.content.map(item => ({
+            platform: item.platform,
+            content: item.content,
+            queueItemId: result.queueItem?.id
+          })),
+          confidence: 85,
+          estimatedEngagement: 'High',
+          totalCost: result.totalCost
+        };
+      } else {
+        error = result.message || 'Generation failed';
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        error = err.message;
+      } else {
+        error = 'Failed to generate content. Please try again.';
+      }
+      console.error('Generation error:', err);
+    } finally {
       isGenerating = false;
-    }, 2000);
+    }
   }
   
-  function generateMockContent(platform, topic, tone, length) {
-    const templates = {
-      linkedin: {
-        professional: {
-          short: `Just published insights on ${topic}. The data shows clear trends that leaders need to watch.`,
-          medium: `I've been analyzing ${topic} for the past quarter, and the patterns are fascinating. What started as a niche trend has evolved into something much bigger. The key insight? Organizations that adapt quickly will have a significant advantage.`,
-          long: `${topic} is reshaping how we think about business strategy.\n\nOver the past year, I've worked with dozens of teams navigating this shift. Here's what I've learned:\n\n1. Early adopters are seeing 3x ROI\n2. The learning curve is steeper than expected\n3. Culture matters more than technology\n\nThe organizations succeeding aren't just implementing new tools—they're fundamentally rethinking their approach.\n\nWhat's your experience with ${topic}? I'd love to hear your insights.`
-        }
-      }
-    };
+  async function addToQueue() {
+    if (!generatedContent?.variants?.[0]?.queueItemId) return;
     
-    return templates.linkedin?.professional?.[length] || `Content about ${topic} for ${platform}`;
+    try {
+      // Content is already added to queue during generation, just redirect
+      goto('/dashboard/queue');
+    } catch (err) {
+      error = 'Failed to add to queue';
+    }
+  }
+  
+  function discardContent() {
+    generatedContent = null;
+    error = null;
   }
   
   function togglePlatform(platformId) {
@@ -76,15 +131,8 @@
       platforms = [...platforms, platformId];
     }
   }
+</script>
   
-  function addToQueue() {
-    alert('Content added to queue!');
-    generatedContent = null;
-  }
-  
-  function discardContent() {
-    generatedContent = null;
-  }
 </script>
 
 <div class="generate-page">
@@ -94,21 +142,39 @@
   </header>
   
   {#if !generatedContent}
-    <div class="generate-form">
+    {#if error}
+    <div class="error-banner">
+      <strong>Error:</strong> {error}
+      {#if error.includes('API key')}
+        <a href="/dashboard/settings" class="error-link">Go to Settings →</a>
+      {/if}
+    </div>
+  {/if}
+
+  <div class="generate-form">
       <div class="form-section">
         <label class="section-label">Select Persona</label>
-        <div class="persona-grid">
-          {#each personas as persona}
-            <button
-              class="persona-card"
-              class:selected={selectedPersona === persona.id}
-              on:click={() => selectedPersona = persona.id}
-            >
-              <span class="persona-icon">🎭</span>
-              <span class="persona-name">{persona.name}</span>
-            </button>
-          {/each}
-        </div>
+        {#if isLoadingPersonas}
+          <div class="loading-state">Loading personas...</div>
+        {:else if personas.length === 0}
+          <div class="empty-state">
+            <p>No personas found. Create one first!</p>
+            <a href="/dashboard/personas" class="create-link">Create Persona →</a>
+          </div>
+        {:else}
+          <div class="persona-grid">
+            {#each personas as persona}
+              <button
+                class="persona-card"
+                class:selected={selectedPersona === persona.id.toString()}
+                on:click={() => selectedPersona = persona.id.toString()}
+              >
+                <span class="persona-icon">🎭</span>
+                <span class="persona-name">{persona.name}</span>
+              </button>
+            {/each}
+          </div>
+        {/if}
       </div>
       
       <div class="form-section">
@@ -397,6 +463,55 @@
   .generate-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  .error-banner {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .error-link {
+    color: #ef4444;
+    text-decoration: underline;
+    font-weight: 600;
+  }
+
+  .loading-state {
+    padding: 20px;
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+  }
+
+  .empty-state {
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    text-align: center;
+  }
+
+  .empty-state p {
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 16px;
+  }
+
+  .create-link {
+    display: inline-block;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
   }
   
   .spinner {

@@ -1,64 +1,119 @@
 <!-- Content Queue Management Page -->
 <script>
   import { onMount } from 'svelte';
+  import { queueApi, ApiError } from '$lib/services/api.js';
   
   let activeTab = 'pending';
   let selectedItems = [];
-  
-  const queueItems = {
-    pending: [
-      {
-        id: 1,
-        platform: 'LinkedIn',
-        content: 'AI isn\'t replacing humans - it\'s augmenting our capabilities. The key is learning to work alongside intelligent systems. Here are 3 ways to start...',
-        status: 'pending',
-        persona: 'Tech Thought Leader',
-        created: '2 hours ago',
-        scheduled: 'Today, 3:00 PM'
-      },
-      {
-        id: 2,
-        platform: 'Twitter',
-        content: '5 lessons I learned building in public:\n\n1. Consistency beats perfection\n2. Community > Code\n3. Ship fast, iterate faster\n4. Share the journey\n5. Stay authentic',
-        status: 'pending',
-        persona: 'Casual Creator',
-        created: '5 hours ago',
-        scheduled: 'Tomorrow, 9:00 AM'
-      },
-      {
-        id: 3,
-        platform: 'Instagram',
-        content: 'Behind the scenes of how AI changed my content game. The truth about automation and authenticity...',
-        status: 'pending',
-        persona: 'Professional Consultant',
-        created: '1 day ago',
-        scheduled: 'Not scheduled'
-      }
-    ],
-    approved: [
-      {
-        id: 4,
-        platform: 'LinkedIn',
-        content: 'The future of work is hybrid. Not just remote vs office, but human vs AI collaboration. Smart leaders are preparing now...',
-        status: 'approved',
-        persona: 'Tech Thought Leader',
-        created: '2 days ago',
-        scheduled: 'Today, 6:00 PM'
-      }
-    ],
-    posted: [
-      {
-        id: 5,
-        platform: 'Twitter',
-        content: 'Just shipped a new feature! 🚀',
-        status: 'posted',
-        persona: 'Casual Creator',
-        created: '3 days ago',
-        posted: '3 days ago',
-        engagement: { likes: 45, replies: 12, shares: 8 }
-      }
-    ]
+  let queueItems = {
+    pending: [],
+    approved: [],
+    posted: []
   };
+  let isLoading = true;
+  let error = null;
+  let isProcessing = false;
+  
+  const statusMap = {
+    'draft': 'pending',
+    'review': 'pending',
+    'approved': 'approved',
+    'scheduled': 'approved',
+    'posted': 'posted',
+    'rejected': 'pending'
+  };
+  
+  onMount(async () => {
+    await loadQueueItems();
+  });
+  
+  async function loadQueueItems() {
+    isLoading = true;
+    error = null;
+    
+    try {
+      const result = await queueApi.list();
+      
+      // Organize items by status
+      queueItems = {
+        pending: [],
+        approved: [],
+        posted: []
+      };
+      
+      if (result.queue) {
+        result.queue.forEach(item => {
+          const mappedStatus = statusMap[item.status] || 'pending';
+          queueItems[mappedStatus].push({
+            id: item.id,
+            platform: item.platforms?.[0] || 'LinkedIn',
+            content: item.draft || item.content || '',
+            status: item.status,
+            persona: item.persona?.name || 'Unknown',
+            created: formatDate(item.created_at),
+            scheduled: item.scheduled_for ? formatDate(item.scheduled_for) : 'Not scheduled',
+            posted: item.posted_at ? formatDate(item.posted_at) : null,
+            engagement: item.engagement
+          });
+        });
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        error = err.message;
+      } else {
+        error = 'Failed to load queue items';
+      }
+      console.error('Queue load error:', err);
+    } finally {
+      isLoading = false;
+    }
+  }
+  
+  function formatDate(dateString) {
+    if (!dateString) return 'Not scheduled';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
+  }
+  
+  async function approveItem(id) {
+    isProcessing = true;
+    try {
+      await queueApi.approve(id);
+      await loadQueueItems();
+      selectedItems = [];
+    } catch (err) {
+      error = 'Failed to approve item';
+      console.error(err);
+    } finally {
+      isProcessing = false;
+    }
+  }
+  
+  async function deleteItem(id) {
+    if (!confirm('Are you sure you want to delete this item?')) return;
+    
+    isProcessing = true;
+    try {
+      await queueApi.delete(id);
+      await loadQueueItems();
+      selectedItems = selectedItems.filter(itemId => itemId !== id);
+    } catch (err) {
+      error = 'Failed to delete item';
+      console.error(err);
+    } finally {
+      isProcessing = false;
+    }
+  }
   
   function toggleSelection(id) {
     if (selectedItems.includes(id)) {
@@ -67,24 +122,47 @@
       selectedItems = [...selectedItems, id];
     }
   }
-  
+
   function selectAll() {
-    const currentItems = queueItems[activeTab];
+    const currentItems = queueItems[activeTab] || [];
     if (selectedItems.length === currentItems.length) {
       selectedItems = [];
     } else {
       selectedItems = currentItems.map(item => item.id);
     }
   }
-  
-  function approveSelected() {
-    alert(`Approved ${selectedItems.length} items`);
-    selectedItems = [];
-  }
-  
-  function deleteSelected() {
-    if (confirm(`Delete ${selectedItems.length} items?`)) {
+
+  async function approveSelected() {
+    isProcessing = true;
+    try {
+      for (const id of selectedItems) {
+        await queueApi.approve(id);
+      }
+      await loadQueueItems();
       selectedItems = [];
+    } catch (err) {
+      error = 'Failed to approve selected items';
+      console.error(err);
+    } finally {
+      isProcessing = false;
+    }
+  }
+
+  async function deleteSelected() {
+    if (!confirm(`Delete ${selectedItems.length} items?`)) return;
+
+    isProcessing = true;
+    try {
+      for (const id of selectedItems) {
+        await queueApi.delete(id);
+      }
+      await loadQueueItems();
+      selectedItems = [];
+    } catch (err) {
+      error = 'Failed to delete selected items';
+      console.error(err);
+    } finally {
+      isProcessing = false;
     }
   }
   
@@ -140,79 +218,93 @@
     </button>
   </div>
   
-  {#if selectedItems.length > 0}
-    <div class="bulk-actions">
-      <span class="selection-info">{selectedItems.length} selected</span>
-      {#if activeTab === 'pending'}
-        <button class="bulk-btn approve" on:click={approveSelected}>
-          ✓ Approve Selected
-        </button>
-      {/if}
-      <button class="bulk-btn delete" on:click={deleteSelected}>
-        🗑️ Delete Selected
-      </button>
+  {#if error}
+    <div class="error-banner">
+      {error}
+      <button class="retry-btn" on:click={loadQueueItems}>Retry</button>
     </div>
   {/if}
-  
-  <div class="queue-list">
-    {#each queueItems[activeTab] as item}
-      <div class="queue-card" class:selected={selectedItems.includes(item.id)}>
-        <div class="card-select">
-          <input 
-            type="checkbox" 
-            checked={selectedItems.includes(item.id)}
-            on:change={() => toggleSelection(item.id)}
-          />
-        </div>
-        
-        <div class="card-content">
-          <div class="card-header">
-            <div class="platform-badge" style="background: {getPlatformColor(item.platform)}20; color: {getPlatformColor(item.platform)}">
-              <span>{getPlatformIcon(item.platform)}</span>
-              {item.platform}
-            </div>
-            <span class="persona-tag">{item.persona}</span>
-          </div>
-          
-          <p class="content-text">{item.content}</p>
-          
-          <div class="card-meta">
-            <span class="meta-item">📅 Created: {item.created}</span>
-            {#if item.scheduled}
-              <span class="meta-item">⏰ Scheduled: {item.scheduled}</span>
-            {/if}
-            {#if item.posted}
-              <span class="meta-item">📤 Posted: {item.posted}</span>
-            {/if}
-          </div>
-          
-          {#if item.engagement}
-            <div class="engagement-stats">
-              <span class="stat">❤️ {item.engagement.likes}</span>
-              <span class="stat">💬 {item.engagement.replies}</span>
-              <span class="stat">🔄 {item.engagement.shares}</span>
-            </div>
-          {/if}
-        </div>
-        
-        <div class="card-actions">
-          {#if activeTab === 'pending'}
-            <button class="action-btn approve" title="Approve">✓</button>
-          {/if}
-          <button class="action-btn edit" title="Edit">✏️</button>
-          <button class="action-btn delete" title="Delete">🗑️</button>
-        </div>
-      </div>
-    {/each}
-  </div>
-  
-  {#if queueItems[activeTab].length === 0}
-    <div class="empty-state">
-      <span class="empty-icon">📭</span>
-      <h3>No {activeTab} content</h3>
-      <p>Generate new content to see it here</p>
-      <a href="/dashboard/generate" class="generate-link">Generate Content →</a>
+
+  {#if isLoading}
+    <div class="loading-state">
+      <span class="spinner"></span>
+      Loading queue items...
     </div>
+  {:else}
+    {#if selectedItems.length > 0}
+      <div class="bulk-actions">
+        <span class="selection-info">{selectedItems.length} selected</span>
+        {#if activeTab === 'pending'}
+          <button class="bulk-btn approve" on:click={approveSelected} disabled={isProcessing}>
+            ✓ Approve Selected
+          </button>
+        {/if}
+        <button class="bulk-btn delete" on:click={deleteSelected} disabled={isProcessing}>
+          🗑️ Delete Selected
+        </button>
+      </div>
+    {/if}
+
+    <div class="queue-list">
+      {#each queueItems[activeTab] || [] as item}
+        <div class="queue-card" class:selected={selectedItems.includes(item.id)}>
+          <div class="card-select">
+            <input
+              type="checkbox"
+              checked={selectedItems.includes(item.id)}
+              on:change={() => toggleSelection(item.id)}
+            />
+          </div>
+
+          <div class="card-content">
+            <div class="card-header">
+              <div class="platform-badge" style="background: {getPlatformColor(item.platform)}20; color: {getPlatformColor(item.platform)}">
+                <span>{getPlatformIcon(item.platform)}</span>
+                {item.platform}
+              </div>
+              <span class="persona-tag">{item.persona}</span>
+            </div>
+
+            <p class="content-text">{item.content}</p>
+
+            <div class="card-meta">
+              <span class="meta-item">📅 Created: {item.created}</span>
+              {#if item.scheduled}
+                <span class="meta-item">⏰ Scheduled: {item.scheduled}</span>
+              {/if}
+              {#if item.posted}
+                <span class="meta-item">📤 Posted: {item.posted}</span>
+              {/if}
+            </div>
+
+            {#if item.engagement}
+              <div class="engagement-stats">
+                <span class="stat">❤️ {item.engagement.likes}</span>
+                <span class="stat">💬 {item.engagement.replies}</span>
+                <span class="stat">🔄 {item.engagement.shares}</span>
+              </div>
+            {/if}
+          </div>
+
+          <div class="card-actions">
+            {#if activeTab === 'pending'}
+              <button class="action-btn approve" title="Approve" on:click={() => approveItem(item.id)} disabled={isProcessing}>✓</button>
+            {/if}
+            <button class="action-btn edit" title="Edit">✏️</button>
+            <button class="action-btn delete" title="Delete" on:click={() => deleteItem(item.id)} disabled={isProcessing}>🗑️</button>
+          </div>
+        </div>
+      {/each}
+    </div>
+
+    {#if (queueItems[activeTab] || []).length === 0}
+      <div class="empty-state">
+        <span class="empty-icon">📭</span>
+        <h3>No {activeTab} content</h3>
+        <p>Generate new content to see it here</p>
+        <a href="/dashboard/generate" class="generate-link">Generate Content →</a>
+      </div>
+    {/if}
   {/if}
 </div>
 
@@ -311,6 +403,63 @@
   
   .bulk-btn:hover {
     opacity: 0.8;
+  }
+
+  .bulk-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .error-banner {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .retry-btn {
+    padding: 6px 12px;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+
+  .retry-btn:hover {
+    background: rgba(239, 68, 68, 0.3);
+  }
+
+  .loading-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+    margin-right: 8px;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .action-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
   }
   
   .queue-list {

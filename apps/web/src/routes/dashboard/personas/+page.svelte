@@ -1,31 +1,33 @@
 <!-- Persona Builder Page -->
 <script>
   import { onMount } from 'svelte';
+  import { personaApi, ApiError } from '$lib/services/api.js';
+  import { userApi } from '$lib/services/api.js';
   
   let posts = '';
   let isExtracting = false;
   let extractionResult = null;
   let error = null;
   let activeTab = 'input';
+  let isSaving = false;
+  let successMessage = null;
+  let llmConfig = null;
   
-  // Mock data for demo
-  const mockPersona = {
-    name: 'Professional Tech Voice',
-    description: 'A thought leader in AI and technology with a focus on practical applications',
-    toneRules: {
-      style: ['professional', 'insightful', 'concise'],
-      topics: ['AI', 'technology', 'innovation', 'future of work'],
-      avoid: ['jargon without explanation', 'overly promotional language'],
-      phrases: ['The key insight is...', 'What this means for you...'],
-      examples: [
-        'AI isn\'t replacing humans - it\'s augmenting our capabilities.',
-        'The future belongs to those who learn to work alongside intelligent systems.'
-      ],
-      toneDescriptors: ['authoritative', 'accessible', 'forward-thinking'],
-      sentenceStructure: 'mixed',
-      vocabulary: 'advanced'
+  onMount(async () => {
+    // Load user's LLM configuration
+    try {
+      const settings = await userApi.getSettings();
+      if (settings?.defaultLlmProvider) {
+        llmConfig = {
+          provider: settings.defaultLlmProvider,
+          apiKey: settings.apiKeys?.[settings.defaultLlmProvider] || '',
+          model: settings.defaultModel || 'gpt-4'
+        };
+      }
+    } catch (e) {
+      console.log('No LLM config found, user will need to configure in settings');
     }
-  };
+  });
   
   async function extractPersona() {
     if (!posts.trim()) {
@@ -39,44 +41,67 @@
       return;
     }
     
+    if (!llmConfig?.apiKey) {
+      error = 'Please configure your LLM API key in Settings first';
+      return;
+    }
+    
     isExtracting = true;
     error = null;
     
-    // Simulate API call
-    setTimeout(() => {
-      extractionResult = {
-        persona: mockPersona,
-        confidence: 87,
-        sampleMatches: [
-          {
-            originalPost: postList[0]?.substring(0, 150) + '...',
-            explanation: 'Demonstrates professional, insightful characteristics',
-            score: 0.92
+    try {
+      const result = await personaApi.extract(postList, llmConfig);
+      
+      if (result.success) {
+        extractionResult = {
+          persona: {
+            name: result.persona.name,
+            description: result.persona.description,
+            toneRules: result.persona.tone_rules
           },
-          {
-            originalPost: postList[1]?.substring(0, 150) + '...',
-            explanation: 'Shows authoritative tone with accessible language',
-            score: 0.89
-          }
-        ],
-        suggestedRules: [
-          {
-            rule: 'Focus on AI, technology, innovation topics',
-            examples: ['Create content about AI trends', 'Discuss innovation insights']
-          },
-          {
-            rule: 'Maintain professional and insightful tone',
-            examples: ['Write with authoritative voice', 'Keep insights practical']
-          }
-        ]
-      };
+          confidence: result.persona.extraction_confidence || 80,
+          sampleMatches: result.metadata?.sampleMatches || [],
+          suggestedRules: result.metadata?.suggestedRules || [],
+          personaId: result.persona.id
+        };
+        activeTab = 'result';
+      } else {
+        error = result.message || 'Extraction failed';
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        error = err.message;
+      } else {
+        error = 'Failed to extract persona. Please try again.';
+      }
+      console.error('Extraction error:', err);
+    } finally {
       isExtracting = false;
-      activeTab = 'result';
-    }, 2000);
+    }
   }
   
-  function savePersona() {
-    alert('Persona saved successfully!');
+  async function savePersona() {
+    if (!extractionResult?.personaId) return;
+    
+    isSaving = true;
+    try {
+      // Persona is already saved during extraction, just show success
+      successMessage = 'Persona saved successfully!';
+      setTimeout(() => {
+        successMessage = null;
+      }, 3000);
+    } catch (err) {
+      error = 'Failed to save persona';
+    } finally {
+      isSaving = false;
+    }
+  }
+  
+  function resetForm() {
+    posts = '';
+    extractionResult = null;
+    error = null;
+    activeTab = 'input';
   }
 </script>
 
@@ -125,7 +150,16 @@ The future of work isn't about AI vs humans. It's about AI + humans. Those who a
       ></textarea>
       
       {#if error}
-        <div class="error-message">{error}</div>
+        <div class="error-message">
+          <strong>Error:</strong> {error}
+          {#if error.includes('API key')}
+            <a href="/dashboard/settings" class="error-link">Go to Settings →</a>
+          {/if}
+        </div>
+      {/if}
+      
+      {#if successMessage}
+        <div class="success-message">{successMessage}</div>
       {/if}
       
       <div class="input-stats">
@@ -242,8 +276,16 @@ The future of work isn't about AI vs humans. It's about AI + humans. Those who a
           <button class="secondary-btn" on:click={() => activeTab = 'input'}>
             ← Back to Edit
           </button>
-          <button class="primary-btn" on:click={savePersona}>
-            Save Persona
+          <button class="primary-btn" on:click={savePersona} disabled={isSaving}>
+            {#if isSaving}
+              <span class="spinner"></span>
+              Saving...
+            {:else}
+              Save Persona
+            {/if}
+          </button>
+          <button class="secondary-btn" on:click={resetForm}>
+            Create New
           </button>
         </div>
       </div>
@@ -357,6 +399,26 @@ The future of work isn't about AI vs humans. It's about AI + humans. Those who a
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);
     color: #ef4444;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .error-link {
+    color: #ef4444;
+    text-decoration: underline;
+    font-weight: 600;
+  }
+
+  .success-message {
+    background: rgba(72, 187, 120, 0.1);
+    border: 1px solid rgba(72, 187, 120, 0.3);
+    color: #48bb78;
     padding: 12px 16px;
     border-radius: 8px;
     margin-top: 16px;

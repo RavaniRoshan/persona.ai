@@ -1,38 +1,131 @@
 <!-- Dashboard Home Page -->
 <script>
   import { onMount } from 'svelte';
-  
-  // Mock stats for demo
-  const stats = {
-    personas: 3,
-    queued: 12,
-    posted: 45,
-    engagement: '2.4K'
+  import { personaApi, queueApi, ApiError } from '$lib/services/api.js';
+
+  let stats = {
+    personas: 0,
+    queued: 0,
+    posted: 0,
+    engagement: '0'
   };
-  
-  const recentActivity = [
-    { action: 'Generated content', target: 'LinkedIn post about AI trends', time: '2 hours ago', type: 'generate' },
-    { action: 'Approved post', target: 'Twitter thread on productivity', time: '5 hours ago', type: 'approve' },
-    { action: 'Posted to LinkedIn', target: 'The future of remote work...', time: '1 day ago', type: 'post' },
-    { action: 'Created persona', target: 'Tech Thought Leader', time: '2 days ago', type: 'create' }
-  ];
-  
-  const queuedContent = [
-    {
-      id: 1,
-      platform: 'LinkedIn',
-      content: 'AI isn\'t replacing humans - it\'s augmenting our capabilities. The key is learning to work alongside intelligent systems...',
-      status: 'pending',
-      scheduled: 'Today, 3:00 PM'
-    },
-    {
-      id: 2,
-      platform: 'Twitter',
-      content: '5 lessons I learned building in public:\n\n1. Consistency beats perfection\n2. Community > Code\n3. Ship fast, iterate faster...',
-      status: 'approved',
-      scheduled: 'Tomorrow, 9:00 AM'
+
+  let recentActivity = [];
+  let queuedContent = [];
+  let isLoading = true;
+  let error = null;
+
+  onMount(async () => {
+    await loadDashboardData();
+  });
+
+  async function loadDashboardData() {
+    isLoading = true;
+    error = null;
+
+    try {
+      // Load personas count
+      const personasResult = await personaApi.list();
+      const personas = personasResult.personas || [];
+      stats.personas = personas.length;
+
+      // Load queue stats and items
+      const [queueStats, queueItems] = await Promise.all([
+        queueApi.stats().catch(() => ({ stats: {}, total: 0 })),
+        queueApi.list().catch(() => ({ queue: [] }))
+      ]);
+
+      // Calculate queue stats
+      const queue = queueItems.queue || [];
+      const statusCounts = queue.reduce((acc, item) => {
+        acc[item.status] = (acc[item.status] || 0) + 1;
+        return acc;
+      }, {});
+
+      stats.queued = (statusCounts.draft || 0) + (statusCounts.review || 0) + (statusCounts.approved || 0) + (statusCounts.scheduled || 0);
+      stats.posted = statusCounts.posted || 0;
+
+      // Get recent queue items for display
+      queuedContent = queue.slice(0, 3).map(item => ({
+        id: item.id,
+        platform: item.platforms?.[0] || 'LinkedIn',
+        content: item.draft || item.content || '',
+        status: item.status === 'draft' || item.status === 'review' ? 'pending' : item.status,
+        scheduled: item.scheduled_for ? formatDate(item.scheduled_for) : 'Not scheduled'
+      }));
+
+      // Build recent activity from queue items
+      recentActivity = buildRecentActivity(queue.slice(0, 5), personas.slice(0, 2));
+
+    } catch (err) {
+      if (err instanceof ApiError) {
+        error = err.message;
+      } else {
+        error = 'Failed to load dashboard data';
+      }
+      console.error('Dashboard load error:', err);
+    } finally {
+      isLoading = false;
     }
-  ];
+  }
+
+  function formatDate(dateString) {
+    if (!dateString) return 'Not scheduled';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffHours < 1) return 'Just now';
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
+  }
+
+  function buildRecentActivity(queueItems, personas) {
+    const activities = [];
+
+    // Add queue-based activities
+    queueItems.forEach(item => {
+      if (item.status === 'posted') {
+        activities.push({
+          action: 'Posted to ' + (item.platforms?.[0] || 'LinkedIn'),
+          target: (item.draft || item.content || '').substring(0, 40) + '...',
+          time: formatDate(item.updated_at || item.created_at),
+          type: 'post'
+        });
+      } else if (item.status === 'approved') {
+        activities.push({
+          action: 'Approved post',
+          target: (item.draft || item.content || '').substring(0, 40) + '...',
+          time: formatDate(item.updated_at || item.created_at),
+          type: 'approve'
+        });
+      } else {
+        activities.push({
+          action: 'Generated content',
+          target: (item.draft || item.content || '').substring(0, 40) + '...',
+          time: formatDate(item.created_at),
+          type: 'generate'
+        });
+      }
+    });
+
+    // Add persona creation activities
+    personas.forEach(persona => {
+      activities.push({
+        action: 'Created persona',
+        target: persona.name,
+        time: formatDate(persona.created_at),
+        type: 'create'
+      });
+    });
+
+    // Sort by time (most recent first) and take top 5
+    return activities.slice(0, 5);
+  }
 </script>
 
 <div class="dashboard-home">
@@ -40,7 +133,20 @@
     <h1>Dashboard</h1>
     <p class="subtitle">Overview of your PersonaMirror activity</p>
   </header>
-  
+
+  {#if error}
+    <div class="error-banner">
+      {error}
+      <button class="retry-btn" on:click={loadDashboardData}>Retry</button>
+    </div>
+  {/if}
+
+  {#if isLoading}
+    <div class="loading-state">
+      <span class="spinner"></span>
+      Loading dashboard...
+    </div>
+  {:else}
   <!-- Stats Grid -->
   <div class="stats-grid">
     <div class="stat-card">
@@ -136,6 +242,7 @@
       </div>
     </div>
   </div>
+  {/if}
 </div>
 
 <style>
@@ -152,11 +259,59 @@
     font-weight: 700;
     margin-bottom: 8px;
   }
-  
+
   .subtitle {
     color: rgba(255, 255, 255, 0.6);
   }
-  
+
+  .error-banner {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .retry-btn {
+    padding: 6px 12px;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+
+  .retry-btn:hover {
+    background: rgba(239, 68, 68, 0.3);
+  }
+
+  .loading-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+    margin-right: 12px;
+    vertical-align: middle;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
