@@ -6,6 +6,5 @@
     "apps/web/**/*.js": {
       "runtime": "nodejs20.x"
     }
-  },
-  "installCommand": "npm i -g pnpm@8.9.0 && pnpm install"
+  }
 }
