@@ -190,8 +190,9 @@ The future of work isn't about AI vs humans. It's about AI + humans. Those who a
       
       <div class="persona-form">
         <div class="form-group">
-          <label>Persona Name</label>
+          <label for="persona-name">Persona Name</label>
           <input 
+            id="persona-name"
             type="text" 
             bind:value={extractionResult.persona.name}
             class="form-input"
@@ -199,8 +200,9 @@ The future of work isn't about AI vs humans. It's about AI + humans. Those who a
         </div>
         
         <div class="form-group">
-          <label>Description</label>
+          <label for="persona-description">Description</label>
           <textarea 
+            id="persona-description"
             bind:value={extractionResult.persona.description}
             class="form-input"
             rows="2"
@@ -211,8 +213,8 @@ The future of work isn't about AI vs humans. It's about AI + humans. Those who a
           <h4>Tone & Style</h4>
           
           <div class="form-group">
-            <label>Style Descriptors</label>
-            <div class="tags">
+            <label for="style-descriptors">Style Descriptors</label>
+            <div id="style-descriptors" class="tags">
               {#each extractionResult.persona.toneRules.style as style, i}
                 <span class="tag">{style}</span>
               {/each}
@@ -220,8 +222,8 @@ The future of work isn't about AI vs humans. It's about AI + humans. Those who a
           </div>
           
           <div class="form-group">
-            <label>Common Topics</label>
-            <div class="tags">
+            <label for="common-topics">Common Topics</label>
+            <div id="common-topics" class="tags">
               {#each extractionResult.persona.toneRules.topics as topic}
                 <span class="tag topic">{topic}</span>
               {/each}
@@ -229,8 +231,8 @@ The future of work isn't about AI vs humans. It's about AI + humans. Those who a
           </div>
           
           <div class="form-group">
-            <label>Phrases to Use</label>
-            <ul class="phrase-list">
+            <label for="phrases">Phrases to Use</label>
+            <ul id="phrases" class="phrase-list">
               {#each extractionResult.persona.toneRules.phrases as phrase}
                 <li>{phrase}</li>
               {/each}
@@ -238,8 +240,8 @@ The future of work isn't about AI vs humans. It's about AI + humans. Those who a
           </div>
           
           <div class="form-group">
-            <label>Example Sentences</label>
-            <div class="examples">
+            <label for="examples">Example Sentences</label>
+            <div id="examples" class="examples">
               {#each extractionResult.persona.toneRules.examples as example}
                 <blockquote>{example}</blockquote>
               {/each}

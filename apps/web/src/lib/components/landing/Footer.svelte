@@ -87,10 +87,10 @@
       <div class="opacity-0" class:animate-fade-up={isVisible} style="animation-delay: 0.25s; animation-fill-mode: forwards;">
         <h4 class="font-bold text-white mb-6">Resources</h4>
         <ul class="space-y-4">
-          <li><a href="#" class="text-sm text-slate-400 hover:text-white transition-colors">Blog</a></li>
-          <li><a href="#" class="text-sm text-slate-400 hover:text-white transition-colors">Community</a></li>
-          <li><a href="#" class="text-sm text-slate-400 hover:text-white transition-colors">Partners</a></li>
-          <li><a href="#" class="text-sm text-slate-400 hover:text-white transition-colors">Help Center</a></li>
+          <li><button class="text-sm text-slate-400 hover:text-white transition-colors bg-transparent border-none cursor-pointer text-left">Blog</button></li>
+          <li><button class="text-sm text-slate-400 hover:text-white transition-colors bg-transparent border-none cursor-pointer text-left">Community</button></li>
+          <li><button class="text-sm text-slate-400 hover:text-white transition-colors bg-transparent border-none cursor-pointer text-left">Partners</button></li>
+          <li><button class="text-sm text-slate-400 hover:text-white transition-colors bg-transparent border-none cursor-pointer text-left">Help Center</button></li>
         </ul>
       </div>
 

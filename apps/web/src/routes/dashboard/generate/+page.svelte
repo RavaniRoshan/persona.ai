@@ -151,7 +151,7 @@
 
   <div class="generate-form">
       <div class="form-section">
-        <label class="section-label">Select Persona</label>
+        <label class="section-label" for="persona-select">Select Persona</label>
         {#if isLoadingPersonas}
           <div class="loading-state">Loading personas...</div>
         {:else if personas.length === 0}
@@ -176,8 +176,9 @@
       </div>
       
       <div class="form-section">
-        <label class="section-label">Topic or Prompt</label>
+        <label class="section-label" for="topic-input">Topic or Prompt</label>
         <textarea
+          id="topic-input"
           class="topic-input"
           bind:value={topic}
           placeholder="What should the content be about? e.g., 'Share insights on AI in healthcare' or 'Discuss remote work trends'"
@@ -186,8 +187,8 @@
       </div>
       
       <div class="form-section">
-        <label class="section-label">Platforms</label>
-        <div class="platform-grid">
+        <label class="section-label" for="platform-select">Platforms</label>
+        <div id="platform-select" class="platform-grid">
           {#each platformOptions as platform}
             <button
               class="platform-card"
@@ -203,8 +204,8 @@
       
       <div class="form-row">
         <div class="form-section half">
-          <label class="section-label">Tone</label>
-          <select class="form-select" bind:value={tone}>
+          <label class="section-label" for="tone-select">Tone</label>
+          <select id="tone-select" class="form-select" bind:value={tone}>
             {#each toneOptions as option}
               <option value={option.value}>{option.label}</option>
             {/each}
@@ -212,8 +213,8 @@
         </div>
         
         <div class="form-section half">
-          <label class="section-label">Length</label>
-          <select class="form-select" bind:value={length}>
+          <label class="section-label" for="length-select">Length</label>
+          <select id="length-select" class="form-select" bind:value={length}>
             {#each lengthOptions as option}
               <option value={option.value}>{option.label}</option>
             {/each}

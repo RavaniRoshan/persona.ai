@@ -1,0 +1,12 @@
+{
+  "buildCommand": "turbo run build",
+  "outputDirectory": "apps/web/.svelte-kit/output",
+  "framework": "sveltekit",
+  "functions": {
+    "apps/web/**/*.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "installCommand": "pnpm install",
+  "nodeVersion": "20.x"
+}

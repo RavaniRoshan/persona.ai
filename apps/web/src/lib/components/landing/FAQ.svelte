@@ -65,12 +65,12 @@
     <!-- CTA -->
     <div class="mt-12 text-center opacity-0" class:animate-fade-up={isVisible} style="animation-delay: 0.6s; animation-fill-mode: forwards;">
       <p class="text-slate-600 mb-4">Still have questions?</p>
-      <a href="#" class="inline-flex items-center gap-2 text-violet-600 font-semibold hover:text-violet-700 transition-colors">
+      <button class="inline-flex items-center gap-2 text-violet-600 font-semibold hover:text-violet-700 transition-colors bg-transparent border-none cursor-pointer">
         Contact our support team
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
         </svg>
-      </a>
+      </button>
     </div>
   </div>
 </section>

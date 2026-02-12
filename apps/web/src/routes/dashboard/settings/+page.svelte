@@ -166,19 +166,19 @@
       </div>
       
       <div class="form-group">
-        <label>Email</label>
-        <input type="email" class="form-input" value="user@example.com" disabled />
+        <label for="email">Email</label>
+        <input id="email" type="email" class="form-input" value="user@example.com" disabled />
         <span class="field-hint">Email cannot be changed</span>
       </div>
       
       <div class="form-group">
-        <label>Display Name</label>
-        <input type="text" class="form-input" placeholder="Your name" />
+        <label for="display-name">Display Name</label>
+        <input id="display-name" type="text" class="form-input" placeholder="Your name" />
       </div>
       
       <div class="form-group">
-        <label>Bio</label>
-        <textarea class="form-input" rows="3" placeholder="Tell us about yourself"></textarea>
+        <label for="bio">Bio</label>
+        <textarea id="bio" class="form-input" rows="3" placeholder="Tell us about yourself"></textarea>
       </div>
       
       <button class="save-btn">Save Profile</button>
